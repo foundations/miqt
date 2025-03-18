@@ -931,6 +931,16 @@ func emitBindingCpp(src *CppParsedHeader, filename string) (string, error) {
 	ret.WriteString(`#include <` + filename + ">\n")
 	ret.WriteString(`#include "gen_` + filename + "\"\n")
 
+	// Perform any platform checks
+	// n.b. The Q_OS_ variable is defined usually indirectly from another Qt
+	// header, so it should be checked only after all the other includes,
+	// although that seems suboptimal
+
+	platformRestriction := HeaderPlatformRestriction(filename)
+	if platformRestriction != nil {
+		ret.WriteString(`#if ` + platformRestriction.CxxIf() + "\n\n")
+	}
+
 	// Write prototypes for functions that the host language bindings should export
 	// for virtual function overrides
 
@@ -1305,6 +1315,11 @@ extern "C" {
 				ret = strings.Replace(ret, classInherit.Class.ClassName+`::`, cppSubclassName(c)+`::`, -1)
 			}
 
+			// The first instance of this class name change affected the very
+			// method we're going to call
+			// Undo it, but only once
+			ret = strings.Replace(ret, "->"+cppSubclassName(c), "->"+c.ClassName, 1)
+
 			return ret
 		}
 
@@ -1403,6 +1418,12 @@ extern "C" {
 					"\n",
 			)
 		}
+	}
+
+	//
+
+	if platformRestriction != nil {
+		ret.WriteString(`#endif //` + platformRestriction.CxxIf() + "\n\n")
 	}
 
 	return ret.String(), nil

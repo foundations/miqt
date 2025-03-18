@@ -38,9 +38,11 @@ These apps are listed in alphabetical order. Raise an issue or PR to have your a
 
 - [annie-miqt](https://code.ivysaur.me/annie-miqt), a GUI application for downloading videos.
 - [jqview](https://github.com/rcalixte/jqview), The simplest possible native GUI for inspecting JSON objects with jq
+- [libqt6zig](https://github.com/rcalixte/libqt6zig), Qt bindings for Zig and C based on MIQT
 - [mdoutliner](https://github.com/mappu/miqt/tree/master/examples/mdoutliner), Markdown Outliner sample application
 - [qbolt](https://code.ivysaur.me/qbolt), a graphical database manager for BoltDB
 - [qocker-miqt](https://code.ivysaur.me/qocker-miqt), a user-friendly GUI application for managing Docker containers
+- [seaqt](https://github.com/seaqt/nim-seaqt), Qt bindings for Nim and C based on MIQT
 - See more users of the [qt5](https://pkg.go.dev/github.com/mappu/miqt/qt?tab=importedby) or [qt6](https://pkg.go.dev/github.com/mappu/miqt/qt6?tab=importedby) packages
 
 ## FAQ
@@ -141,15 +143,15 @@ Fork this repository and add your library to the `genbindings/config-libraries` 
 For dynamic linking, with the system Qt (Qt 5):
 
 ```bash
-apt install qtbase5-dev build-essential # Debian / Ubuntu
+apt install qtbase5-dev libqscintilla2-qt5-dev libqt5svg5-dev libqt5webchannel5-dev libqt5webkit5-dev qtbase5-private-dev qtmultimedia5-dev qtwebengine5-dev qtwebengine5-private-dev build-essential # Debian / Ubuntu
 go build -ldflags '-s -w'
 ```
 
 For dynamic linking, with the system Qt (Qt 6):
 
 ```bash
-apt install qt6-base-dev build-essential # Debian / Ubuntu
-dnf install qt6-qtbase-devel golang # Fedora
+apt install qt6-base-dev libqscintilla2-qt6-dev qt6-base-private-dev qt6-multimedia-dev qt6-svg-dev qt6-webchannel-dev qt6-webengine-dev build-essential # Debian / Ubuntu
+dnf install qt6-qtbase-devel qscintilla-qt6-devel qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qtwebchannel-devel qt6-qtwebengine-devel golang # Fedora
 
 go build -ldflags '-s -w'
 ```
@@ -205,7 +207,7 @@ Static linking is also available by installing the `mingw-w64-ucrt-x86_64-qt5-st
 
 ### Windows (Docker)
 
-*Tested with MXE Qt 5.15 / MXE GCC 5 under cross-compilation*
+*Tested with MXE Qt 5.15 / MXE GCC 5, and MXE Qt 6.8 / MXE GCC 11 under cross-compilation*
 
 For static linking:
 
@@ -234,7 +236,7 @@ To add an icon and other properties to the .exe, you can use [the go-winres tool
 pkg install git
 pkg install devel/pkgconf
 pkg install go
-pkg install devel/qt6 # This includes many Qt libraries, a subset could be used instead
+pkg install qt6-base qt6-multimedia qt6-svg qt6-webchannel qt6-webengine qscintilla2-qt6
 
 go build -ldflags '-s -w'
 ```
@@ -275,6 +277,8 @@ See FAQ Q3 for advice about docker performance.
 
 *Tested with Raymii Qt 5.15 / Android SDK 31 / Android NDK 22*
 
+*Tested with Qt.io Qt 6.6 / Android SDK 33 / Android NDK 25*
+
 MIQT supports compiling for Android. Some extra steps are required to bridge the Java, C++, Go worlds.
 
 ![](doc/android-architecture.png)
@@ -285,11 +289,13 @@ MIQT supports compiling for Android. Some extra steps are required to bridge the
 	- Ensure to `import "C"`.
 	- Check `examples/android` to see how to support both Android and desktop platforms.
 2. Build the necessary docker container for cross-compilation:
-	- `docker build -t miqt/android:latest -f docker/android-armv8a-go1.23-qt5.15-dynamic.Dockerfile .`
+	- (Qt 5) `docker build -t miqt/android:latest -f docker/android-armv8a-go1.23-qt5.15-dynamic.Dockerfile .`
+	- (Qt 6) `docker build -t miqt/android:latest -f docker/android-armv8a-go1.23-qt6.6-dynamic.Dockerfile .`
 3. Build your application as `.so` format:
 	- `docker run --rm -v $(pwd):/src -w /src miqt/android:latest go build -buildmode c-shared -ldflags "-s -w -extldflags -Wl,-soname,my_go_app.so" -o android-build/libs/arm64-v8a/my_go_app.so`
 4. Build the Qt linking stub:
-	- `docker run --rm -v $(pwd):/src -w /src miqt/android:latest android-stub-gen.sh my_go_app.so AndroidMain android-build/libs/arm64-v8a/libRealAppName_arm64-v8a.so`
+	- (Qt 5) `docker run --rm -v $(pwd):/src -w /src miqt/android:latest android-stub-gen.sh my_go_app.so AndroidMain android-build/libs/arm64-v8a/libRealAppName_arm64-v8a.so`
+	- (Qt 6) Add `--qt6` final argument
 	- The linking stub is needed because Qt for Android will itself only call a function named `main`, but `c-shared` can't create one.
 5. Build the [androiddeployqt](https://doc.qt.io/qt-6/android-deploy-qt-tool.html) configuration file:
 	- `docker run --rm -v $(pwd):/src -w /src miqt/android:latest android-mktemplate.sh RealAppName deployment-settings.json`
